@@ -1,0 +1,39 @@
+{
+    "name": "micro-serve",
+    "homepage": "https://github.com/khrome/micro-serve",
+    "version": "0.0.1",
+    "main": "server.js",
+    "description": "servers without cruft",
+    "keywords": [
+        "http",
+        "https",
+        "service"
+    ],
+    "author": "Abbey Hawk Sparrow <@khrome> (http://patternweaver.com)",
+    "contributors": [],
+    "bugs": {
+        "url": "https://github.com/khrome/micro-serve/issues"
+    },
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/khrome/micro-serve.git"
+    },
+    "dependencies": {
+        "async-arrays": "*",
+        "mime": "*",
+        "extended-emitter": "*",
+        "querystring": "*"
+    },
+    "devDependencies": {
+        "mocha": "*",
+        "should": "*",
+        "luhn": "*",
+        "faker2": "*"
+    },
+    "optionalDependencies": {
+    },
+    "engines": {
+        "node": "*"
+    }
+}

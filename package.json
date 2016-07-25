@@ -27,9 +27,7 @@
     },
     "devDependencies": {
         "mocha": "*",
-        "should": "*",
-        "luhn": "*",
-        "faker2": "*"
+        "should": "*"
     },
     "optionalDependencies": {
     },

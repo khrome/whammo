@@ -1,6 +1,6 @@
 {
-    "name": "micro-serve",
-    "homepage": "https://github.com/khrome/micro-serve",
+    "name": "whammo",
+    "homepage": "https://github.com/khrome/whammo",
     "version": "0.0.1",
     "main": "server.js",
     "description": "servers without cruft",
@@ -12,12 +12,12 @@
     "author": "Abbey Hawk Sparrow <@khrome> (http://patternweaver.com)",
     "contributors": [],
     "bugs": {
-        "url": "https://github.com/khrome/micro-serve/issues"
+        "url": "https://github.com/khrome/whammo/issues"
     },
     "license": "MIT",
     "repository": {
         "type": "git",
-        "url": "git://github.com/khrome/micro-serve.git"
+        "url": "git://github.com/khrome/whammo.git"
     },
     "dependencies": {
         "async-arrays": "*",

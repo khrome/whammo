@@ -66,15 +66,20 @@ var Server = function(options){
                     if(!type) return error('404', 'The requested resource does not exist.', request, response);
                     if(ob.options.types.indexOf(type.toLowerCase()) !== -1){
                         fs.exists(process.cwd()+path, function(exists){
-                            fs.readFile(process.cwd()+path, function (err, buffer){
-                                if(err){
-                                    module.exports.error(err.message);
-                                    return error('404', 'The requested resource does not exist.', response);
-                                }
-                                var type = mime.lookup(path);
-                                response.setHeader("Content-Type", type);
-                                response.end(buffer.toString());
-                            });
+                            if(exists){
+                                fs.readFile(process.cwd()+path, function (err, buffer){
+                                    if(err){
+                                        module.exports.error(err.message, request, response);
+                                        return error('404', 'The requested resource does not exist.', response);
+                                    }
+                                    var type = mime.lookup(path);
+                                    response.setHeader("Content-Type", type);
+                                    response.end(buffer.toString());
+                                });
+                            }else{
+                                module.exports.error('DNE:'+path, request, response);
+                                return error('404', 'The requested resource does not exist.', request, response);
+                            }
                         });
                     }
                 }

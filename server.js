@@ -95,6 +95,7 @@ Server.prototype.listen = function(port, secure){
         try{
             var server;
             var handler = ob.options.handlers['http'];
+            var shandler = ob.options.handlers['https'];
             if(!secure){
                 server = require('http').createServer(handler).listen(port);
                 ob.emit('http-server-started', server);
@@ -103,9 +104,9 @@ Server.prototype.listen = function(port, secure){
                     ob.log('Listening on port '+port)
                 });
             }else{
-                if( config.ssl_pfx || config.ssl_key && config.ssl_certificate ){
+                if( shandler && (config.ssl_pfx || config.ssl_key && config.ssl_certificate) ){
                     ob.emit('https-server-started', server);
-                    server = require('https').createServer(port);
+                    server = require('https').createServer(shandler).listen(port);
                 }else throw new Error('wanted a secure server, but missing credentials (pfx, key & ssl cert)')
             }
             if(ob.options.handlers['http-websocket'] && server){
@@ -176,7 +177,7 @@ Server.prototype.stop = function() {
 };
 
 
-Server.prototype.handleRequest = function(protocol, request, response) {
+Server.prototype.handleRequest = function(protocol, request, response, complete) {
     var ob = this;
     try{
         request.get = qs.parse(request.url);
@@ -194,19 +195,10 @@ Server.prototype.handleRequest = function(protocol, request, response) {
                     request.post = JSON.stringify(request.content); //if not give JSON a chance
                 }catch(ex){}
             }
-            var caselessPath = request.parsedURL.path.toLowerCase();
-            if(caselessPath == '/' || caselessPath == 'index'|| caselessPath.indexOf('index.') === 0){
-                return rootHarness(request, response);
-            }
-            if(ob.options.handlers[protocol]){
-                return ob.options.handlers[protocol](request, response);
-            }else{
-                return error('500', 'protocol not supported('+protocol+')', request, response);
-            }
-    
+            if(complete) complete();
         });
         request.parsedURL = url.parse(request.url, true);
-        request.get = request.parsedURL.query
+        request.get = request.parsedURL.query;
     }catch(ex){
         console.log(ex);
         return error('error', 'The requested resource does not exist.', request, response);

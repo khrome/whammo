@@ -2,6 +2,8 @@ whammo.js
 ==============
 I found all the usual suspects gave me a bunch of cruft I may (or may not) use when what I really wanted was a lightweight library that could serve as the basis for a number of delivery strategies. Thus micro-serve was born. It handles request isolation, logging, errors and uses handlers registered against the prototcol (IE: 'http'). It supports https as well as sockets(via socket.io for now), but pretty much nothing else.
 
+If you want something that integrates with express, check out [micro-serve](https://www.npmjs.com/package/micro-serve).
+
 Usage
 -----
 

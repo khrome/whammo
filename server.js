@@ -59,7 +59,7 @@ var Server = function(options){
         switch(type.toLowerCase()){
             case 'http':
             case 'https':
-                ob.options.handlers[type.toLowerCase()] = function(request, response){
+                ob.options.handlers[type.toLowerCase()] = function(request, response, fallthrough){
                     var uri = url.parse(request.url, true);
                     var path = ((type == '!' && uri.pathname != '/')?uri.pathname+'.html':uri.pathname);
                     var type = path.lastIndexOf('.') != -1 ? path.substring(path.lastIndexOf('.')+1) : '!';
@@ -81,7 +81,7 @@ var Server = function(options){
                                 return error('404', 'The requested resource does not exist.', request, response);
                             }
                         });
-                    }
+                    }else if(fallthrough) fallthrough(request, response)
                 }
             //case '':
             default: throw new Error('unknown type:'+type);

@@ -61,9 +61,11 @@ var Server = function(options){
             case 'https':
                 ob.options.handlers[type.toLowerCase()] = function(request, response, fallthrough){
                     var uri = url.parse(request.url, true);
+                    console.log('REQ:', uri, path, type);
                     var path = ((type == '!' && uri.pathname != '/')?uri.pathname+'.html':uri.pathname);
                     var type = path.lastIndexOf('.') != -1 ? path.substring(path.lastIndexOf('.')+1) : '!';
                     if(!type) return error('404', 'The requested resource does not exist.', request, response);
+                    console.log('REQ:', uri, path, type);
                     if(ob.options.types.indexOf(type.toLowerCase()) !== -1){
                         fs.exists(process.cwd()+path, function(exists){
                             if(exists){
@@ -115,6 +117,12 @@ Server.prototype.listen = function(port, secure){
                 io.sockets.on('connection', function(socket){
                     if(a.socketHandler) a.socketHandler.apply(this, arguments);
                 });
+            }
+            server.on('clientError', function(err, socket){
+              socket.end('HTTP/1.1 400 Bad Request\r\n\r\n', err);
+            });
+            ob.stop = function(){
+                server.close();
             }
         }catch(ex){
             console.log(ex)
@@ -172,8 +180,7 @@ Server.prototype.act = function(action) {
     }
 };
 
-Server.prototype.stop = function() {
-    
+Server.prototype.stop = function(){
 };
 
 
@@ -225,9 +232,13 @@ Server.prototype.writePage = function(config, request, response, text, options, 
         //todo: config.meta
         cb(text);
     }
+    if(!response){
+        console.log('Bad Request', request.method, request.url);
+        return;
+    }
+    response.writeHead(options.code);
     fs.readFile(process.cwd()+'/client.js', function (err, init) {
         fs.exists(process.cwd()+'/raw.page.html', function(exists){
-            response.writeHead(options.code);
             if(exists){
                 fs.readFile(process.cwd()+'/raw.page.html', function(err, file){
                     renderPage(file, function(page){

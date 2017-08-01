@@ -11,7 +11,7 @@ var domain = require('domain');
 var Emitter = require('extended-emitter');
 
 /****************************************
-    
+
     var server = new MicroServer({
         error_codes : {},
         router : 'director', // or fn
@@ -64,7 +64,7 @@ var Server = function(options){
                     console.log('REQ:', uri, path, type);
                     var path = ((type == '!' && uri.pathname != '/')?uri.pathname+'.html':uri.pathname);
                     var type = path.lastIndexOf('.') != -1 ? path.substring(path.lastIndexOf('.')+1) : '!';
-                    if(!type) return error('404', 'The requested resource does not exist.', request, response);
+                    if(!type) return ob.error('404', 'The requested resource does not exist.', request, response);
                     console.log('REQ:', uri, path, type);
                     if(ob.options.types.indexOf(type.toLowerCase()) !== -1){
                         fs.exists(process.cwd()+path, function(exists){
@@ -72,15 +72,15 @@ var Server = function(options){
                                 fs.readFile(process.cwd()+path, function (err, buffer){
                                     if(err){
                                         module.exports.error(err.message, request, response);
-                                        return error('404', 'The requested resource does not exist.', response);
+                                        return ob.error('404', 'The requested resource does not exist.', response);
                                     }
                                     var type = mime.lookup(path);
                                     response.setHeader("Content-Type", type);
-                                    response.end(buffer.toString());
+                                    response.end(buffer);
                                 });
                             }else{
                                 module.exports.error('DNE:'+path, request, response);
-                                return error('404', 'The requested resource does not exist.', request, response);
+                                return ob.error('404', 'The requested resource does not exist.', request, response);
                             }
                         });
                     }else if(fallthrough) fallthrough(request, response)
@@ -119,6 +119,7 @@ Server.prototype.listen = function(port, secure){
                 });
             }
             server.on('clientError', function(err, socket){
+              console.log('Error', err.stack);
               socket.end('HTTP/1.1 400 Bad Request\r\n\r\n', err);
             });
             ob.stop = function(){
@@ -143,14 +144,14 @@ Server.prototype.error = function(type, message, request, response){
     if(typeof type === 'number') options.code = type;
     else{
         if(type && [
-            '100', '101', '102', 
+            '100', '101', '102',
             '200', '201', '202', '203', '204', '205', '206', '207', '208',
-            '300', '301', '302', '303', '304', '305', '306', '307', '308', 
+            '300', '301', '302', '303', '304', '305', '306', '307', '308',
             '400', '401', '402', '403', '404', '405', '406', '407', '408', '409', '410',
                 '411', '412', '413', '414', '415', '416', '417', '418', '419', '420', '422',
-                '423', '424', '425', '426', '428', '429', '431', '440', '444', '449', '450', 
+                '423', '424', '425', '426', '428', '429', '431', '440', '444', '449', '450',
                 '451', '494', '495', '496', '497', '499',
-            '500', '501', '502', '503', '504', '505', '506', '507', '508', '509', '510', 
+            '500', '501', '502', '503', '504', '505', '506', '507', '508', '509', '510',
                 '511', '520', '521', '522', '523', '524', '598', '599'
         ].indexOf(type) !== -1) options.code = parseInt(type);
         else options.code = 404;
@@ -187,7 +188,10 @@ Server.prototype.stop = function(){
 Server.prototype.handleRequest = function(protocol, request, response, complete) {
     var ob = this;
     try{
-        request.get = qs.parse(request.url);
+        var resource = url.parse(request.url);
+        //console.log('$$$', resource);
+        request.paramstring = (resource.search || '').substring(1);
+        request.get = qs.parse(request.paramstring);
         request.setEncoding("utf8");
         request.content = '';
         var random = 1 + Math.floor(Math.random()*1000000);
@@ -195,24 +199,25 @@ Server.prototype.handleRequest = function(protocol, request, response, complete)
             request.content += chunk;
         });
         request.addListener("end", function(){
-            try{
-                request.post = qs.parse(request.content); //first try normal args
-            }catch(ex){
+            if(request.content){
                 try{
-                    request.post = JSON.stringify(request.content); //if not give JSON a chance
-                }catch(ex){}
+                    request.post = JSON.parse(request.content); //if not give JSON a chance
+                }catch(ex){
+                    try{
+                        request.post = qs.parse(request.content); //first try normal args
+                    }catch(ex){}
+                }
             }
             if(complete) complete();
         });
-        request.parsedURL = url.parse(request.url, true);
-        request.get = request.parsedURL.query;
     }catch(ex){
         console.log(ex);
-        return error('error', 'The requested resource does not exist.', request, response);
+        return ob.error('error', 'The requested resource does not exist.', request, response);
     }
 };
 
 Server.prototype.writePage = function(config, request, response, text, options, filter){
+    console.log(request.url, request.get, request.post)
     if(typeof text == 'function'){
         filter = text;
         text = undefined;
@@ -233,7 +238,12 @@ Server.prototype.writePage = function(config, request, response, text, options, 
         cb(text);
     }
     if(!response){
-        console.log('Bad Request', request.method, request.url);
+        if(!request){
+            console.log('No Request!', arguments);
+        }else{
+            console.log(request);
+            console.log('Bad Request', request.method, request.url);
+        }
         return;
     }
     response.writeHead(options.code);

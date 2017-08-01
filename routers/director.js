@@ -32,14 +32,14 @@ module.exports = {
                                 fs.readFile(process.cwd()+path, function (err, buffer){
                                     if(err){
                                         module.exports.error(err.message);
-                                        return server.error('404', 'The requested resource could not be returned.', response);
+                                        return server.error('404', 'The requested resource could not be returned.', request, response);
                                     }
                                     if(!mime) mime = require('mime');
                                     var type = mime.lookup(path);
                                     response.setHeader("Content-Type", type);
                                     response.end(buffer.toString());
                                 });
-                            }else return server.error('404', 'The requested resource does not exist.', response);
+                            }else return server.error('404', 'The requested resource does not exist.', request, response);
                         });
                     }else{
                         return server.error('404', err.message, request, response);

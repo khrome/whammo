@@ -122,8 +122,8 @@ Server.prototype.listen = function(port, secure){
               console.log('Error', err.stack);
               socket.end('HTTP/1.1 400 Bad Request\r\n\r\n', err);
             });
-            ob.stop = function(){
-                server.close();
+            ob.stop = function(cb){
+                server.close(cb);
             }
         }catch(ex){
             console.log(ex)
@@ -181,7 +181,8 @@ Server.prototype.act = function(action) {
     }
 };
 
-Server.prototype.stop = function(){
+Server.prototype.stop = function(cb){
+  throw new Error('Server stopped before it was started!');
 };
 
 

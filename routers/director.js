@@ -35,7 +35,7 @@ module.exports = {
                                         return server.error('404', 'The requested resource could not be returned.', request, response);
                                     }
                                     if(!mime) mime = require('mime');
-                                    var type = mime.lookup(path);
+                                    var type = (mime.lookup && mime.lookup(path)) || mime.getType(path);
                                     response.setHeader("Content-Type", type);
                                     response.end(buffer.toString());
                                 });

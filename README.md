@@ -5,9 +5,9 @@ whammo.js
 [![npm](https://img.shields.io/npm/dt/whammo.svg)]()
 [![Travis](https://img.shields.io/travis/khrome/whammo.svg)]()
 
-I found all the usual suspects gave me a bunch of cruft I may (or may not) use when what I really wanted was a lightweight library that could serve as the basis for a number of delivery strategies. Thus micro-serve was born. It handles request isolation, logging, errors and uses handlers registered against the prototcol (IE: 'http'). As of 0.5.0 it now supports more complex configurations and handles everything with streams. This is a breaking change with previous versions. Plugins are intentionally incompatible with any kind of concat build process, at least for now.
+I find what I really want is a lightweight library that can serve as the basis for a number of delivery strategies, and often found myself using http directly. But that tends to be very verbose, so I wanted something a little neater... but without assuming everything... so I built this. It handles request isolation, logging, errors, supports many complex configurations and handles everything with streams.
 
-While the *return* happens according to the precedence you set, it's important to note: the processing of them all is in parallel streams, so work for this request is still being performed even during individual async waits.
+While the *return* happens according to the precedence you set, it's important to note: the processing of all actions is in parallel streams, so work for this request is still being performed even during individual async waits.
 
 Usage
 -----
@@ -16,47 +16,45 @@ You express a server as a stack of operations, and the first one (by position) t
 
 	var Server = require('whammo');
 
-This sample uses director and handles GETs and POSTs the same way and dumps errors as parseable JSON.
-
 	application = new Server({
-		actions : [
-			{ name : 'http-file', with:{types:['png', 'json', 'js', 'html', 'css']}},
-			{ name : 'get-vars' },
-			{ name : 'post-vars'},
-			{ name : 'director-router', with : {
-				routes : {
-					'/test' : {get:function(){
-						console.log(this.req);
-						this.res.end('Got it!');
-					}}
-				}
-			}},
-			{ name : '404' , with : {json : true}}
-		]
+		actions : <action_list>
 	});
+
+This list uses director and handles GETs and POSTs the same way and dumps errors as parseable JSON.
+
+	{ name : 'http-file', with:{
+		types:['png', 'json', 'js', 'html', 'css']
+	}},
+	{ name : 'get-vars' },
+	{ name : 'post-vars'},
+	{ name : 'director-router', with : {
+		routes : {
+			'/test' : {get:function(){
+				console.log(this.req);
+				this.res.end('Got it!');
+			}}
+		}
+	}},
+	{ name : '404' , with : {json : true}}
 
 This sample is a more traditional server with compression, conditional POST processing and HTML error output:
 
-	application = new Server({
-		actions : [
-			{ name : 'http-file', with:{types:[
-				'png', 'gif', 'jpg', 'jpeg', 'json', 'js', 'html', 'css',
-				'ttf', 'eot', 'woff', 'ico', 'otf', 'svg'
-			]}, then: {name : 'compress'}},
-			{ name : 'get-vars' },
-			{ name : 'post-vars', when : {method : {'$eq':'POST'}}},
-			{ name : 'director-router', with : {
-				routes : {
-					'/test' : {get:function(){
-						this.res.end('Got it!');
-					}}
-				}
-			}},
-			{ name : '404', then: {name : 'compress'}}
-		]
-	});
+	{ name : 'http-file', with:{types:[
+		'png', 'gif', 'jpg', 'jpeg', 'json', 'js', 'html', 'css',
+		'ttf', 'eot', 'woff', 'ico', 'otf', 'svg'
+	]}, then: {name : 'compress'}},
+	{ name : 'get-vars' },
+	{ name : 'post-vars', when : {method : {'$eq':'POST'}}},
+	{ name : 'director-router', with : {
+		routes : {
+			'/test' : {get:function(){
+				this.res.end('Got it!');
+			}}
+		}
+	}},
+	{ name : '404', then: {name : 'compress'}}
 
-Then, finally, start the app:
+Then, finally, you'll need to start the app:
 
 	application.listen(8081);
 

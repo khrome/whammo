@@ -5,31 +5,85 @@ whammo.js
 [![npm](https://img.shields.io/npm/dt/whammo.svg)]()
 [![Travis](https://img.shields.io/travis/khrome/whammo.svg)]()
 
-I found all the usual suspects gave me a bunch of cruft I may (or may not) use when what I really wanted was a lightweight library that could serve as the basis for a number of delivery strategies. Thus micro-serve was born. It handles request isolation, logging, errors and uses handlers registered against the prototcol (IE: 'http'). It supports https as well as sockets(via socket.io for now), but pretty much nothing else.
+I found all the usual suspects gave me a bunch of cruft I may (or may not) use when what I really wanted was a lightweight library that could serve as the basis for a number of delivery strategies. Thus micro-serve was born. It handles request isolation, logging, errors and uses handlers registered against the prototcol (IE: 'http'). As of 0.5.0 it now supports more complex configurations and handles everything with streams. This is a breaking change with previous versions. Plugins are intentionally incompatible with any kind of concat build process, at least for now.
 
-If you want something that integrates with express, check out [micro-serve](https://www.npmjs.com/package/micro-serve).
+While the *return* happens according to the precedence you set, it's important to note: the processing of them all is in parallel streams, so work for this request is still being performed even during individual async waits.
 
 Usage
 -----
 
-This sample uses director, but it is just as easy to use page.js or any other router (or your own)
+You express a server as a stack of operations, and the first one (by position) to produce output gets output to the user.
 
 	var Server = require('whammo');
-	var directorAdapter = require('whammo/routers/director');
-    var director = require('director');
-    
-    var application = new Server();
-    
-    var router = new director.http.Router({
-        '/test' : {
-	        get:function(){
-	            this.res.end('Hello World');
-	        }
-        }
-    });
-    
-    directorAdapter.routeHTTP(application, router);
-    application.listen(8081);
+
+This sample uses director and handles GETs and POSTs the same way and dumps errors as parseable JSON.
+
+	application = new Server({
+		actions : [
+			{ name : 'http-file', types:['png', 'json', 'js', 'html', 'css']},
+			{ name : 'get-vars' },
+			{ name : 'post-vars'},
+			{ name : 'director-router', with : {
+				routes : {
+					'/test' : {get:function(){
+						console.log(this.req);
+						this.res.end('Got it!');
+					}}
+				}
+			}},
+			{ name : '404' , with : {json : true}}
+		]
+	});
+
+	This sample is a more traditional server with compression, conditional POST processing and HTML error output:
+
+		application = new Server({
+			actions : [
+				{ name : 'http-file', types:[
+					'png', 'gif', 'jpg', 'jpeg', 'json', 'js', 'html', 'css',
+					'ttf', 'eot', 'woff', 'ico', 'otf', 'svg'
+				], then: {name : 'compress'}},
+				{ name : 'get-vars' },
+				{ name : 'post-vars', when : {method : {'$eq':'POST'}}},
+				{ name : 'director-router', with : {
+					routes : {
+						'/test' : {get:function(){
+							this.res.end('Got it!');
+						}}
+					}
+				}},
+				{ name : '404', then: {name : 'compress'}}
+			]
+		});
+
+Then, finally, start the app:
+
+	application.listen(8081);
+
+Built-In Actions
+----------------
+
+In whammo each server is a stack of actions (ordered by precedence) which may then pipline to child actions. In this way, many complex configurations can be achieved through a simple set of operations. These actions can be conditionally enabled using the `when` field using [Mongo Query Document](https://docs.mongodb.com/manual/tutorial/query-documents/) syntax and link their output to other actions with `then` and can pass configuration options using `with`. Other fields are action specific.
+
+- **http-file** : output any files that match provided types and exist
+- **get-vars** : process GET vars and attach them to the request object
+- **post-vars** : process POST vars and attach them to the request object
+- **director-router** : use director to handle the provided routes
+- **pagejs-router** : use pagejs to handle the provided routes
+- **pack-js** : use webpack to deliver bundled js + dependencies (`/__bundle_js/<filepath>`)
+- **404** : outputs a 404 page to the user
+- **compress** : output any files that match provided types and exist
+
+Command Line
+------------
+
+Precaching bundles for build or deployment
+
+	whammo precache /path/to/my/file.js
+
+Launch a server from a config file:
+
+	whammo -c config.json
 
 Testing
 -------

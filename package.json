@@ -1,12 +1,11 @@
 {
     "name": "whammo",
     "homepage": "https://github.com/khrome/whammo",
-    "version": "0.4.0",
+    "version": "0.5.0",
     "main": "server.js",
     "description": "servers without cruft",
     "keywords": [
         "http",
-        "https",
         "service"
     ],
     "author": "Abbey Hawk Sparrow <@khrome> (http://patternweaver.com)",
@@ -22,7 +21,16 @@
     "dependencies": {
         "async-arrays": "*",
         "mime": "*",
+        "sift": "*",
+        "extend": "*",
+        "uuid": "*",
+        "duplexer": "*",
         "extended-emitter": "*",
+        "url": "*",
+        "oppressor": "*",
+        "router": "*",
+        "director": "*",
+        "through": "*",
         "querystring": "*"
     },
     "devDependencies": {

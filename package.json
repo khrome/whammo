@@ -1,11 +1,12 @@
 {
     "name": "whammo",
     "homepage": "https://github.com/khrome/whammo",
-    "version": "0.5.0",
+    "version": "0.5.1",
     "main": "server.js",
-    "description": "servers without cruft",
+    "description": "minimalist componentized servers",
     "keywords": [
         "http",
+        "server",
         "service"
     ],
     "author": "Abbey Hawk Sparrow <@khrome> (http://patternweaver.com)",

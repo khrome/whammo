@@ -20,7 +20,7 @@ This sample uses director and handles GETs and POSTs the same way and dumps erro
 
 	application = new Server({
 		actions : [
-			{ name : 'http-file', types:['png', 'json', 'js', 'html', 'css']},
+			{ name : 'http-file', with:{types:['png', 'json', 'js', 'html', 'css']}},
 			{ name : 'get-vars' },
 			{ name : 'post-vars'},
 			{ name : 'director-router', with : {
@@ -35,26 +35,26 @@ This sample uses director and handles GETs and POSTs the same way and dumps erro
 		]
 	});
 
-	This sample is a more traditional server with compression, conditional POST processing and HTML error output:
+This sample is a more traditional server with compression, conditional POST processing and HTML error output:
 
-		application = new Server({
-			actions : [
-				{ name : 'http-file', types:[
-					'png', 'gif', 'jpg', 'jpeg', 'json', 'js', 'html', 'css',
-					'ttf', 'eot', 'woff', 'ico', 'otf', 'svg'
-				], then: {name : 'compress'}},
-				{ name : 'get-vars' },
-				{ name : 'post-vars', when : {method : {'$eq':'POST'}}},
-				{ name : 'director-router', with : {
-					routes : {
-						'/test' : {get:function(){
-							this.res.end('Got it!');
-						}}
-					}
-				}},
-				{ name : '404', then: {name : 'compress'}}
-			]
-		});
+	application = new Server({
+		actions : [
+			{ name : 'http-file', with:{types:[
+				'png', 'gif', 'jpg', 'jpeg', 'json', 'js', 'html', 'css',
+				'ttf', 'eot', 'woff', 'ico', 'otf', 'svg'
+			]}, then: {name : 'compress'}},
+			{ name : 'get-vars' },
+			{ name : 'post-vars', when : {method : {'$eq':'POST'}}},
+			{ name : 'director-router', with : {
+				routes : {
+					'/test' : {get:function(){
+						this.res.end('Got it!');
+					}}
+				}
+			}},
+			{ name : '404', then: {name : 'compress'}}
+		]
+	});
 
 Then, finally, start the app:
 
@@ -72,9 +72,9 @@ In whammo each server is a stack of actions (ordered by precedence) which may th
 - **pagejs-router** : use pagejs to handle the provided routes
 - **pack-js** : use webpack to deliver bundled js + dependencies (`/__bundle_js/<filepath>`)
 - **404** : outputs a 404 page to the user
-- **compress** : output any files that match provided types and exist
+- **compress** : compress data as it streams through
 
-Command Line
+Command Line[TBD]
 ------------
 
 Precaching bundles for build or deployment
@@ -84,6 +84,14 @@ Precaching bundles for build or deployment
 Launch a server from a config file:
 
 	whammo -c config.json
+
+Roadmap
+-------
+- finish webpack support
+- support short circuiting the stream(in some cases)
+- support stream output
+- mangrove integration
+
 
 Testing
 -------

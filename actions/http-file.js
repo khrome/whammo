@@ -22,6 +22,11 @@ HTTPFile.prototype.handle = function(stream, req, res, cb){
         setTimeout(function(){ cb() }, 0);
         return;
     }
+    if(type && this.types.indexOf(type) === -1){
+        //not a servable type
+        setTimeout(function(){ cb() }, 0);
+        return;
+    }
     fs.exists(file, function(exists){
         if(exists){
             var type = mime.lookup(file);

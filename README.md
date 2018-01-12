@@ -39,15 +39,15 @@ This list uses director and handles GETs and POSTs the same way and dumps errors
 
 This sample is a more traditional server with compression, conditional POST processing and HTML error output:
 
-	{ name : 'http-file', with:{types:[
-		'png', 'gif', 'jpg', 'jpeg', 'json', 'js', 'html', 'css',
-		'ttf', 'eot', 'woff', 'ico', 'otf', 'svg'
-	]}, then: {name : 'compress'}},
+	{ name : 'http-file', with : { types : [
+		'png', 'gif', 'jpg', 'jpeg', 'json', 'js', 'html',
+		'ttf', 'eot', 'woff', 'ico', 'otf', 'css', 'svg'
+	]}, then: { name : 'compress'}},
 	{ name : 'get-vars' },
-	{ name : 'post-vars', when : {method : {'$eq':'POST'}}},
+	{ name : 'post-vars', when : { method : {'$eq':'POST'}}},
 	{ name : 'director-router', with : {
 		routes : {
-			'/test' : {get:function(){
+			'/test' : { get : function(){
 				this.res.end('Got it!');
 			}}
 		}

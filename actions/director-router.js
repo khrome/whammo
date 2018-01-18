@@ -18,7 +18,10 @@ var Router = function(options){
                 if(id === dirSelf.req.id){
                     var cb = ob.waiting[id];
                     delete ob.waiting[id];
-                    cb();
+                    //need to let callbacks flush to get output
+                    setTimeout(function(){
+                        cb();
+                    }, 1);
                 }
             })
         }
@@ -26,12 +29,12 @@ var Router = function(options){
 }
 
 Router.prototype.handle = function(stream, req, res, cb){
-    stream.pipe = function(stream){ //hack to prevent auto-header gen on output
-        stream.on('data', function(item){
+    stream.pipe = function(upstream){ //hack to prevent auto-header gen on output
+        upstream.on('data', function(item){
             var fn = res['_writeRaw']?'_writeRaw':'write';
             res[fn](item);
         })
-        return stream;
+        return upstream;
     }
     //director will try to do a direct dump, so let's intercept
     req.router = this.router;
@@ -41,6 +44,7 @@ Router.prototype.handle = function(stream, req, res, cb){
     this.waiting[req.id] = function(){
         // now that the response object has rendered headers and director thinks
         //it's dumped to the client, dump the output into the stream
+        if(!response.output.length) return;
         response.output.forEach(function(item){
             stream.write(item);
         });

@@ -5,7 +5,9 @@ whammo.js
 [![npm](https://img.shields.io/npm/dt/whammo.svg)]()
 [![Travis](https://img.shields.io/travis/khrome/whammo.svg)]()
 
-I find what I really want is a lightweight library that can serve as the basis for a number of delivery strategies, and often found myself using http directly. But that tends to be very verbose, so I wanted something a little neater... but without assuming everything... so I built this. It handles request isolation, logging, errors, supports many complex configurations and handles everything with streams.
+**Experimental!**
+
+I find what I really want is a lightweight library that can serve as the basis for a number of delivery strategies, and often found myself using http directly. But that tends to be very verbose, so I wanted something a little neater... but without assuming everything... so I built this. It handles request isolation, logging, errors, supports many complex configurations and handles everything with streams. This is a much more experimental version than previous releases... If this new streaming incarnation stabilizes, it will cease to be experimental.
 
 While the *return* happens according to the precedence you set, it's important to note: the processing of all actions is in parallel streams, so work for this request is still being performed even during individual async waits.
 

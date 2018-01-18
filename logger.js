@@ -21,14 +21,18 @@ var Logger = {
             }
         }
         if(typeof message == 'function'){
-            logger = message;
+            Logger.logger = message;
         }else{
             if(!level) level = Logger.INFO;
-            if(module.exports.log_level & level){
-                logger(message);
+            if(module.exports.logLevel & level){
+                Logger.logger(message, level);
             }
         }
     }
+}
+
+Logger.logger = function(logItem, level){
+    console.log(logItem);
 }
 
 var aBit = 1;

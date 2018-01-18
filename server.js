@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-//unassuming server wrapper
+//unassuming streaming server wrapper
 var arrays = require('async-arrays');
 var fs = require('fs');
 var vm = require('vm');
@@ -14,28 +14,29 @@ var stream = require('stream');
 var util = require('util');
 var through = require('through');
 var duplexer = require('duplexer');
-//var Multiplex = require('./multi-stream');
-//var ReadableStreamClone = require('readable-stream-clone')
 
-/****************************************
+/******************[Do It Like This]
 
     var server = new MicroServer({
         actions : [
             //first look for any static files
-            { name : 'http-file' },
+            { name : 'http-file', types:[
+                'png', 'gif', 'jpg', 'jpeg', 'json', 'js', 'html', 'css',
+                'ttf', 'eot', 'woff', 'ico', 'otf', 'svg', 'handlebars'
+            ], then : { name : 'compress' }},
             // always load GET vars
             { name : 'get-vars' },
             // always load POST vars
             { name : 'post-vars' },
-            { name : 'director-router' with : {
+            { name : 'director-router', with : {
                 routes : {
-                    '/' : function(){
-                        this.end('TESTING');
-                    }
+                    '/': {get : function(){
+                        this.res.write('fldskklfdsgfds');
+                        this.res.end('TESTING');
+                    }}
                 }
             }},
-            { name : '404' },
-            { name : 'compress' }
+            { name : '404' , then : { name : 'compress' }}
         ]
     });
     server.listen(80);
@@ -44,6 +45,7 @@ var duplexer = require('duplexer');
  ****************************************/
 
 var Logger = require('./logger');
+//Logger.logLevel = Logger.INFO;
 var ApplicationError = require('./error');
 var BufferedOutputStream = require('./buffered-output-stream');
 
@@ -74,8 +76,11 @@ function makeAction(name, options){
         action.handle(stream, req, res, function(truthyStream, isRaw){
             action.continue(stream, req, res, function(truthyChildStream){
                 if(truthyStream && truthyChildStream){
+                    this.log('DOWNSTREAM-PRODUCT['+req.id+']: '+action.name);
                     cb(truthyChildStream);
                 }else{
+                    if(truthyStream) Logger.log('STREAM-PRODUCT['+req.id+']: '+action.name);
+                    else Logger.log('EMPTY-STREAM['+req.id+']: '+action.name);
                     cb(truthyStream, isRaw);
                 }
             });
@@ -113,6 +118,7 @@ Server.prototype.listen = function(port){
     var isUsingDomains = (ob.options.domain === false);
     serverDomain.add(actions);
     var runService = function(){
+        Logger.log('SERVER LAUNCHED');
         try{
           var AppError = require('./error.js');
           var server = require('http').createServer(function(req, res){
@@ -123,6 +129,7 @@ Server.prototype.listen = function(port){
               var BufferedOutputStream = require('./buffered-output-stream');
               var id = uuid.v4();
               req.id = id;
+              Logger.log('REQUEST['+req.id+']:'+req.url);
               var serve = function(){
                   //hold a reasonable request body
                   req.setEncoding("utf8");
@@ -189,6 +196,7 @@ Server.prototype.listen = function(port){
                           action : outputAction.name,
                           options : outputAction.options
                       });
+                      Logger.log('RESPONSE['+outputAction.name+']');
                       //pipe the winning output to res
                       if(outputRaw) output.pipeRaw(res);
                       else output.pipe(res);
@@ -242,6 +250,112 @@ Server.prototype.listen = function(port){
     }
 }
 
+Server.prototype.run = function(logic, emitters){
+    var isUsingDomains = (ob.options.domain === false);
+    if(isUsingDomains){
+        var domain = domain.create();
+        if(emitters) emitters.forEach(function(emitter){
+            domain.add(emitter);
+        });
+        domain.run(serve);
+    }else{
+        setTimeout(function(){
+            logic.apply(context);
+        },0);
+    }
+}
+
+//PROTOTYPE CLEANUP
+/*
+Server.prototype.listen = function(port){
+    var ob = this;
+    var run = ob.run;
+    var serverInstance;
+    run(function(){
+        Logger.log('SERVER LAUNCHED');
+        try{
+          var AppError = require('./error.js');
+          var server = require('http').createServer(function(req, res){
+              var arrays = require('async-arrays');
+              var sift = require('sift');
+              var through = require('through');
+              var duplexer = require('duplexer');
+              var StreamSelector = require('./stream-selector');
+              var id = uuid.v4();
+              req.id = id;
+              Logger.log('REQUEST['+req.id+']:'+req.url);
+              run(function(){
+                  //hold a reasonable request body
+                  req.setEncoding("utf8");
+                  req.content = new Buffer('');
+                  req.on("data", function(chunk){
+                      var maxSize = req.maxPostLength || Server.maxPostLength;
+                      if(req.content.length < maxSize){
+                          req.content.write(chunk);
+                      }else throw new Error(
+                          'uploaded POST body exceeds allowable length'
+                      );
+                  });
+                  req.setMaxListeners(20);
+                  res.setMaxListeners(20);
+                  req.on("end", function(chunk){
+                      if(chunk) req.content.write(chunk);
+                      req.content = req.content.toString();
+                      req.contentLoaded = true;
+                  });
+
+                  var selector = new StreamSelector(req);
+                  selector.once('top-stream', function(stream){
+                      ob.emit('response', {
+                          action : outputAction.name,
+                          options : outputAction.options
+                      });
+                      Logger.log('RESPONSE['+outputAction.name+']');
+                      //pipe the winning output to res
+                      if(stream.isRaw) output.pipeRaw(res);
+                      else output.pipe(res);
+                      output.flush();
+                  });
+                  arrays.forEachEmission(actions, function(action, index, done){
+                      selector.newPotentialOutput(function(err, stream, complete){
+                          var doAction = function(){
+                              action.act(stream, req, res, function(producedOutput, isRaw){
+                                  if(producedOutput){
+                                      producedOutput.action = action;
+                                      producedOutput.isRaw = !!isRaw;
+                                  }
+                                  complete(producedOutput);
+                                  done();
+                              });
+                          }
+                          if(action.where){
+                              var testAction = sift(action.where);
+                              if(testAction({req:req, res:res})){
+                                  doAction();
+                              }//else don't
+                          }else doAction(); //no conditions
+                      });
+                  }, function(){ });
+                  //now that the pipeline's all set up, turn on the tap
+                  bufferedInputStream.resume();
+              }, [req, res]);
+          });
+          server.on('clientError', function(err, socket){
+              console.log('ERROR', err.stack);
+              new AppError(err).respond({}, socket);
+          });
+          server.listen(port || 80);
+          serverInstance = server;
+        }catch(ex){
+            console.log(ex)
+            ob.error('Could not start webservice');
+        }
+    });
+    ob.close = function(cb){
+        return serverInstance && serverInstance.close(cb);
+    }
+}*/
+
 Server.prototype.action = function(name, options){
     try{
         var action = makeAction(name, options);
@@ -257,27 +371,3 @@ var serverDomain = domain.create(); //create a domain context for the server
 
 Server.Error = ApplicationError;
 module.exports = Server;
-
-/*var server = new Server({
-    actions : [
-        //first look for any static files
-        { name : 'http-file', types:[
-            'png', 'gif', 'jpg', 'jpeg', 'json', 'js', 'html', 'css',
-            'ttf', 'eot', 'woff', 'ico', 'otf', 'svg', 'handlebars'
-        ], then : { name : 'compress' }},
-        // always load GET vars
-        { name : 'get-vars' },
-        // always load POST vars
-        { name : 'post-vars' },
-        { name : 'director-router', with : {
-            routes : {
-                '/': {get : function(){
-                    this.res.write('fldskklfdsgfds');
-                    this.res.end('TESTING');
-                }}
-            }
-        }},
-        { name : '404' , then : { name : 'compress' }}
-    ]
-});
-server.listen(8080);*/

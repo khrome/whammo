@@ -6,7 +6,8 @@ var FileNotFound = function(options){
 FileNotFound.prototype.handle = function(stream, req, res, cb){
     //todo: support 404 file
     if(!this.options.json){
-        res.statusCode = 404;
+        //res.statusCode = 404;
+        //res.writeHead(404);
         stream.write(
             '<html><head>'+
             '<title>404 - File Not Found</title>'+
@@ -17,7 +18,7 @@ FileNotFound.prototype.handle = function(stream, req, res, cb){
         );
         stream.end();
     }else{
-        res.statusCode = 200;
+        //res.statusCode = 200;
         stream.end(JSON.stringify({
             error : 404,
             message : 'File Not Found'

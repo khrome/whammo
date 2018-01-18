@@ -31,6 +31,7 @@ HTTPFile.prototype.handle = function(stream, req, res, cb){
         if(exists){
             var type = mime.lookup(file);
             res.setHeader("Content-Type", type);
+            //res.statusCode = 200;
             var fileStream = fs.createReadStream(file);
             var result = fileStream.pipe(stream);
             //done
